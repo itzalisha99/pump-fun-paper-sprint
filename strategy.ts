@@ -197,13 +197,24 @@ export function createStrategy(params: Params): Bot {
       for (const [mint, tape] of tapes) {
         if (orders.length >= caps.max_orders_per_batch) break;
         if (slots <= 0) break;
+        // Age FIRST: it needs no state lookup, and it is the only gate
+        // that can permanently retire a tape (age only grows). It used to
+        // sit below the reserves check, so the ~99.7% of visits that die
+        // on low reserves never reached it and dead tapes piled up in the
+        // scan for the rest of the window. A too-young tape is kept: it
+        // may become eligible in a later batch.
+        const age = batch.slot - tape.createdSlot;
+        if (age > params.maxAgeSlots) {
+          // Aged out for good: the tape's fields are read nowhere else.
+          tapes.delete(mint);
+          continue;
+        }
         if (tape.bought) continue;
         if (state.positions.has(mint)) continue;
         const curve = state.curves.get(mint);
         if (curve === undefined || curve.complete) continue;
         if (curve.real_quote_reserves < params.minRealReservesLamports) continue;
-        const age = batch.slot - tape.createdSlot;
-        if (age < params.minAgeSlots || age > params.maxAgeSlots) continue;
+        if (age < params.minAgeSlots) continue;
         const p = priceOf(curve.virtual_quote_reserves, curve.virtual_token_reserves);
         if (p <= 0 || tape.peakPrice <= 0) continue;
         if (params.entryMode === 'dip') {
@@ -247,6 +258,10 @@ export function createStrategy(params: Params): Bot {
           max_slippage_bps: params.buySlippageBps,
         });
         tape.bought = true;
+        // The tape is spent: a bought coin is never bought again, and no
+        // other code reads this tape's fields afterwards, so drop it here
+        // instead of scanning past it for the rest of the window.
+        tapes.delete(mint);
         entries.set(mint, { price: p, slot: batch.slot, peak: p });
         free -= amount + tx;
         slots -= 1;
