@@ -9,7 +9,11 @@
 //    coin: take profit, stop loss, or a hard hold limit.
 //  - "breakout": wait for a coin to pull back, then buy the moment it prints
 //    a NEW high above its old peak — a higher high after a pullback, with
-//    buy flow behind it. Exits ride a trailing stop armed after +15%.
+//    buy flow behind it. Exits ride a trailing stop armed after +25%.
+//  - "spray": buy every coin early with no pattern check and let the exits
+//    sort runners from the dead. Tested and REJECTED: −2.00 SOL on the dev
+//    window (336 trips, 31 wins) — most coins die before any exit saves
+//    them, and the 5-position cap fills up with the earliest losers.
 //
 // Small stakes, many coins, never more than five open at once. Everything
 // here is a pure function of the batches the harness feeds in: no clock, no
@@ -26,7 +30,7 @@ import type {
 
 export interface Params {
   /** Which entry trigger to use. */
-  entryMode: 'dip' | 'breakout';
+  entryMode: 'dip' | 'breakout' | 'spray';
   /** Stake per coin, lamports. */
   stakeLamports: bigint;
   /** Youngest age (slots since creation) a coin may be bought at. */
@@ -204,26 +208,34 @@ export function createStrategy(params: Params): Bot {
         if (p <= 0 || tape.peakPrice <= 0) continue;
         if (params.entryMode === 'dip') {
           if (p > tape.peakPrice * (1 - params.retrace)) continue;
-        } else {
+        } else if (params.entryMode === 'breakout') {
           // Breakout: a real pullback happened first, and price just
           // printed a new high above the peak it pulled back from.
           if (tape.maxRetrace < params.minPullback) continue;
           if (p < tape.prevPeakPrice * (1 + params.breakoutLift)) continue;
         }
+        // Spray mode: no pattern check at all — buy every coin early and
+        // let the exits (trailing stop / hard stop / take-profit) sort the
+        // runners from the dead. It trades the coin distribution (about 1
+        // in 5 coins doubles from creation) instead of a price sequence,
+        // so it should survive reshuffled windows better than a pattern.
         // Flow check: recent tape must be mostly buys, with enough of them.
-        let buySol = 0n;
-        let totalSol = 0n;
-        let buys = 0;
-        for (const [isBuy, sol] of tape.recent) {
-          totalSol += sol;
-          if (isBuy) {
-            buySol += sol;
-            buys += 1;
+        // (Spray skips this too — it buys before any flow exists.)
+        if (params.entryMode !== 'spray') {
+          let buySol = 0n;
+          let totalSol = 0n;
+          let buys = 0;
+          for (const [isBuy, sol] of tape.recent) {
+            totalSol += sol;
+            if (isBuy) {
+              buySol += sol;
+              buys += 1;
+            }
           }
+          if (buys < params.minRecentBuys) continue;
+          if (totalSol === 0n) continue;
+          if (Number(buySol) / Number(totalSol) < params.minBuyShare) continue;
         }
-        if (buys < params.minRecentBuys) continue;
-        if (totalSol === 0n) continue;
-        if (Number(buySol) / Number(totalSol) < params.minBuyShare) continue;
         const cap = state.maxBuyLamports(mint);
         let amount = params.stakeLamports < cap ? params.stakeLamports : cap;
         if (amount > free - tx) amount = free - tx;

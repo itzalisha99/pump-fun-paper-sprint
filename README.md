@@ -30,9 +30,10 @@ Offline sim on the kit's 24-hour dev window (full 3-part dataset, 1,222 coins in
 
 ## Stress test
 
-`grade-local --stress` (20 rebuilt copies of the dev window) — numbers recorded here after running it:
+`grade-local --stress` (20 rebuilt copies of the dev window, blocks of trades reshuffled):
 
-- (to be filled after the grade-local run)
+- **Mean −0.745 SOL, median −0.765 SOL, only 2 of 20 copies positive** (best +0.62, worst −1.47). The reshuffled copies mostly lose.
+- Honest reading: the stress copies scramble the tape sequences the breakout pattern depends on, so they understate how the bot does on real sequential data — the final window is real data, not a reshuffle, and on the real dev window the bot made +0.309 SOL. But the stress result also proves the edge is thin and sequence-dependent: most of the profit comes from a few coins at the right moment. A spray variant (buy every coin early, same exits) was tested as a more robust alternative and was far worse on the real window (−2.00 SOL, 336 trips, 31 wins), so the breakout bot stands as the best entry found. This is a free $2 winner-takes-all bounty; the honest expectation is a small positive edge on real data with a wide spread.
 
 ## Files
 
