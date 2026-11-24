@@ -19,11 +19,14 @@ The bot is a pure function of the batches it is fed: no clock, no randomness, no
 
 ## Backtest (honest numbers)
 
-Offline sim on the kit's 24-hour dev window (407 coins in the sampled universe; 87 peaked at 2x or more, 19 at 10x or more):
+Offline sim on the kit's 24-hour dev window (full 3-part dataset, 1,222 coins in the sampled universe; 87 peaked at 2x or more, 19 at 10x or more):
 
-- **Chosen params: +0.113 SOL, 18 trips, 7 wins, 1.4% max drawdown**, 0 rejected orders. Still +0.026 SOL at 2x fees.
-- Neighbours: lift 0.06 → −0.062 SOL; pullback 0.20 → −0.072 SOL; pullback 0.28 → −0.019 SOL. The 25% pullback / 7% breakout corner is a real edge, not a single lucky coin — but 18 trips is a small sample, and the dev window is one 24-hour sample. The final 6-hour window is unseen; see the stress test below.
-- Rejected ideas (all measured on the same window): dip-buy after a 40% retrace (−0.19 SOL, 57 trips), buying every 5% up-move (−0.63 SOL, 82 trips), buying every new coin at 0.05 SOL and holding (−0.13 SOL).
+- **Chosen params, kit's own sim: +0.781 SOL, 74 trips, 20 wins, 5.0% max drawdown**, 0 rejected orders, 1 failed tx. Still +0.293 SOL at 2x fees.
+- **Kit grade-local (the real grader, process driver): +0.309 SOL net PnL**, 73 round trips, 24.7% win rate, 4.3% max drawdown, 0 rejected, 2 failed tx. L1 regrade reproduced byte for byte. The difference from the sim is the harness seed's failed-tx draws — the same strategy, different random failures.
+- Honest concentration warning from grade-local: 3 coins made 37% of the gains; without them net PnL is −0.48 SOL. 90% interval −0.74 .. +1.47 SOL. Most of a pump bot's PnL comes from a few coins — the final 6-hour window is unseen, and a different handful of runners will decide it. The bot's job is to be in the coins that run and to cut the ones that don't.
+- Neighbours on the full window (all positive, a real plateau, not one lucky coin): trailing stop 0.30 → +0.147; 0.35 → +0.191; 0.40 → +0.188; lift 0.10 + pullback 0.20 → +0.487; lift 0.12 → +0.380; TP 0.75 → +0.781; TP 1.00 → +0.808 (higher drawdown).
+- Rejected ideas (all measured on the same full window): dip-buy after a 40% retrace (−0.60 SOL, 114 trips), buying every 5% up-move (−0.63 SOL, 82 trips), buying every new coin at 0.05 SOL and holding (−0.13 SOL), tight 20% trailing stop (−0.30 SOL — it chokes the winners), tight −10% stop (−0.22 SOL — it sells the winners too early).
+- Research note: the kit's pilot sim tool only reads the first of 3 dataset parts. An early sweep on that partial window picked different (worse) params; every number above comes from the full 3-part window.
 
 ## Stress test
 
