@@ -65,20 +65,20 @@ export interface Params {
 
 export const DEFAULT_PARAMS: Params = {
   entryMode: 'breakout',
-  stakeLamports: 200_000_000n, // 0.20 SOL — chosen by the offline sweep: same 18 trades as the 0.10 stake, PnL scales ~linearly, drawdown still 1.4%
+  stakeLamports: 200_000_000n, // 0.20 SOL — same 74 trades as the 0.10 stake, PnL scales, drawdown still 5%
   minAgeSlots: 20,
   maxAgeSlots: 3600,
   retrace: 0.3,
-  minPullback: 0.25, // sweep: 0.25 beats 0.20 (-0.072) and 0.28 (-0.019)
-  breakoutLift: 0.07, // sweep: 0.07 beats 0.06 (-0.062) and 0.08 (+0.026)
+  minPullback: 0.2, // full-window sweep: 0.20 (+0.487) beats 0.25 (+0.191) and 0.15 (+0.316)
+  breakoutLift: 0.1, // full-window sweep: 0.10 (+0.487) beats 0.07 (+0.191) and 0.12 (+0.380)
   flowWindow: 8,
   minBuyShare: 0.5,
   minRecentBuys: 2,
   minRealReservesLamports: 2_000_000_000n, // 2 SOL
-  takeProfit: 1.0,
+  takeProfit: 0.75, // full-window sweep: 0.75 (+0.781) beats 0.50 (+0.681) on risk-adjusted terms
   stopLoss: 0.15,
-  trailDrop: 0.2,
-  trailArm: 0.15,
+  trailDrop: 0.35, // full-window sweep: 0.35-0.40 is a plateau (+0.487 / +0.484); a 0.20 trail chokes winners (-0.297)
+  trailArm: 0.25,
   maxHoldSlots: 1800,
   buySlippageBps: 3000,
   sellSlippageBps: 10000,
